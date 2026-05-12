@@ -18,14 +18,19 @@ import DynamicCodable
 /// YAML 文本解析器
 public struct YAMLParser {
 
-    public init() {}
+    /// 是否解析注释，默认 true
+    public var includeComments: Bool
+
+    public init(includeComments: Bool = true) {
+        self.includeComments = includeComments
+    }
 
     /// 解析 YAML 字符串为 Node 树
     public func parse(_ yaml: String) throws -> Node {
         var lines = yaml.components(separatedBy: .newlines)
         // 预处理：将块标量标记行和其后续内容合并处理
         lines = try preprocessBlockScalars(lines)
-        let state = ParseState(lines: lines)
+        let state = ParseState(lines: lines, includeComments: includeComments)
         try state.parseAll()
         return state.root()
     }
@@ -150,9 +155,12 @@ private final class ParseState {
     var lastSeqFrame: StackFrame? = nil
     /// 上一个序列的缩进
     var lastSeqIndent: Int? = nil
+    /// 是否解析注释
+    let includeComments: Bool
 
-    init(lines: [String]) {
+    init(lines: [String], includeComments: Bool = true) {
         self.lines = lines
+        self.includeComments = includeComments
         let root = Node(.object(OrderedDictionary<String, Node>()))
         self.stack = [StackFrame(indent: -1, kind: .mapping, node: root)]
     }
@@ -180,7 +188,9 @@ private final class ParseState {
 
         // 注释行：累积
         if content.hasPrefix("#") {
-            pendingComments.append(extractComment(content))
+            if includeComments {
+                pendingComments.append(extractComment(content))
+            }
             return
         }
 
@@ -294,7 +304,7 @@ private final class ParseState {
     }
 
     private func splitInlineComment(_ str: String) -> (value: String, comment: String?) {
-        guard let pos = findHashOutsideQuotes(str) else { return (str, nil) }
+        guard includeComments, let pos = findHashOutsideQuotes(str) else { return (str, nil) }
         let v = String(str[..<str.index(str.startIndex, offsetBy: pos)])
             .trimmingCharacters(in: .whitespaces)
         let c = String(str[str.index(str.startIndex, offsetBy: pos + 1)...])

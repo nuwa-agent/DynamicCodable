@@ -8,7 +8,12 @@ import DynamicCodable
 
 public struct TOMLSerializer {
 
-    public init() {}
+    /// 是否输出注释，默认 true
+    public var includeComments: Bool
+
+    public init(includeComments: Bool = true) {
+        self.includeComments = includeComments
+    }
 
     public func serialize(_ node: Node) -> String {
         var result = ""
@@ -137,7 +142,7 @@ public struct TOMLSerializer {
         result.append("\(key) = ")
         serializeValue(value, result: &result)
         // 输出内联注释
-        if let ic = value.inlineComment {
+        if let ic = value.inlineComment, includeComments {
             result.append(" # \(ic)")
         }
         result.append("\n")
@@ -255,6 +260,7 @@ public struct TOMLSerializer {
     // MARK: - 注释输出
 
     private func writeLeadingComments(_ comments: [String], to result: inout String) {
+        guard includeComments else { return }
         for comment in comments {
             result.append("# \(comment)\n")
         }

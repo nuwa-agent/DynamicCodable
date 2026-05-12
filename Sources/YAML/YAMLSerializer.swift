@@ -23,9 +23,12 @@ public struct YAMLSerializer {
 
     /// 缩进空格数（默认 2）
     public var indentCount: Int
+    /// 是否输出注释，默认 true
+    public var includeComments: Bool
 
-    public init(indentCount: Int = 2) {
+    public init(indentCount: Int = 2, includeComments: Bool = true) {
         self.indentCount = indentCount
+        self.includeComments = includeComments
     }
 
     // MARK: - 公开序列化入口
@@ -404,6 +407,7 @@ public struct YAMLSerializer {
 
     /// 输出前导注释行（多行保持原格式）
     private func writeLeadingComments(_ comments: [String], indent: Int, to result: inout String) {
+        guard includeComments else { return }
         for comment in comments {
             result.append(indentString(indent))
             result.append("# \(comment)\n")
@@ -412,11 +416,11 @@ public struct YAMLSerializer {
 
     /// 输出内联注释（在同一行末尾）
     private func writeInlineComment(_ comment: String?, to result: inout String) {
-        guard let comment = comment, !comment.isEmpty else {
+        if let comment, includeComments {
+            result.append(" # \(comment)\n")
+        } else {
             result.append("\n")
-            return
         }
-        result.append(" # \(comment)\n")
     }
 
     /// 生成缩进字符串

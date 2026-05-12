@@ -22,8 +22,12 @@ public struct TOMLParser {
     private var inInlineTable: Bool = false
     // 当前表是否为数组表（键值对需写入最后一个数组元素）
     private var inArrayTable: Bool = false
+    // 是否解析注释，默认 true
+    private var includeComments: Bool = true
 
-    public init() {}
+    public init(includeComments: Bool = true) {
+        self.includeComments = includeComments
+    }
 
     public mutating func parse(_ toml: String) throws -> Node {
         self.tomlString = toml
@@ -50,7 +54,9 @@ public struct TOMLParser {
         if trimmed.isEmpty { return }
         // 注释行累积
         if trimmed.hasPrefix("#") {
-            pendingComments.append(extractComment(trimmed))
+            if includeComments {
+                pendingComments.append(extractComment(trimmed))
+            }
             return
         }
         // 表头 [table] 或 [[array-of-tables]]
@@ -736,6 +742,7 @@ public struct TOMLParser {
     }
 
     private func splitInlineComment(_ line: String) -> (String, String?) {
+        guard includeComments else { return (line, nil) }
         var inSQ = false
         var inDQ = false
         var hashPos: String.Index?

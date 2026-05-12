@@ -377,6 +377,52 @@ struct TOMLErrorTests {
     }
 }
 
+// MARK: - includeComments:false 模式测试
+
+struct TOMLIncludeCommentsTests {
+
+    @Test func testParserIgnoresLeadingComments() throws {
+        let toml = """
+        # 前导注释
+        key = "value"
+        """
+        var parser = TOMLParser(includeComments: false)
+        let node = try parser.parse(toml)
+        #expect(node["key"].comments.isEmpty)
+    }
+
+    @Test func testParserIgnoresInlineComments() throws {
+        let toml = """
+        key = "value"  # 内联注释
+        """
+        var parser = TOMLParser(includeComments: false)
+        let node = try parser.parse(toml)
+        #expect(node["key"].inlineComment == nil)
+    }
+
+    @Test func testSerializerOmitsComments() throws {
+        var node = Node(.string("value"))
+        node.comments = ["前导"]
+        node.inlineComment = "内联"
+        var dict = OrderedDictionary<String, Node>()
+        dict["key"] = node
+        let parent = Node(.object(dict))
+        let output = TOMLSerializer(includeComments: false).serialize(parent)
+        #expect(!output.contains("#"))
+    }
+
+    @Test func testParserWithCommentsEnabledByDefault() throws {
+        let toml = """
+        # 前导
+        key = "value"  # 内联
+        """
+        var parser = TOMLParser()
+        let node = try parser.parse(toml)
+        #expect(node["key"].comments == ["前导"])
+        #expect(node["key"].inlineComment == "内联")
+    }
+}
+
 // MARK: - Node 属性扩展（测试辅助）
 
 extension Node {

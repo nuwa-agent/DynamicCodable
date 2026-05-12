@@ -150,6 +150,49 @@ struct YAMLCodecTests {
     }
 }
 
+struct YAMLIncludeCommentsTests {
+
+    @Test func testParserIgnoresLeadingComments() throws {
+        let yaml = """
+        # 前导注释
+        key: value
+        """
+        let parser = YAMLParser(includeComments: false)
+        let node = try parser.parse(yaml)
+        #expect(node["key"].comments.isEmpty)
+    }
+
+    @Test func testParserIgnoresInlineComments() throws {
+        let yaml = """
+        key: value  # 内联注释
+        """
+        let parser = YAMLParser(includeComments: false)
+        let node = try parser.parse(yaml)
+        #expect(node["key"].inlineComment == nil)
+    }
+
+    @Test func testSerializerOmitsComments() throws {
+        var node = Node(.string("value"))
+        node.comments = ["前导"]
+        node.inlineComment = "内联"
+        var parent = Node(.object(OrderedDictionary<String, Node>()))
+        parent["key"] = node
+        let output = YAMLSerializer(includeComments: false).serialize(parent)
+        #expect(!output.contains("#"))
+    }
+
+    @Test func testParserWithCommentsEnabledByDefault() throws {
+        let yaml = """
+        # 前导
+        key: value  # 内联
+        """
+        let parser = YAMLParser()
+        let node = try parser.parse(yaml)
+        #expect(node["key"].comments == ["前导"])
+        #expect(node["key"].inlineComment == "内联")
+    }
+}
+
 extension Node {
     fileprivate var stringValue: String {
         if case .string(let v) = rawValue { return v }
