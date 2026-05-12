@@ -154,8 +154,8 @@ public struct TOMLParser {
             fullPath = currentTablePath + keys
         }
 
-        // 单键检查重复（数组表内不检查，因为路径含数组索引）
-        if !inArrayTable && keys.count == 1 {
+        // 单键检查重复（数组表和内联表内不检查，内联表允许后值覆盖前值）
+        if !inArrayTable && !inInlineTable && keys.count == 1 {
             let existing = nodeAtPath(fullPath, in: root)
             if existing.rawValue != .null {
                 throw TOMLError.duplicateKey("重复的键: \(keys[0])", line: lineIndex - 1)

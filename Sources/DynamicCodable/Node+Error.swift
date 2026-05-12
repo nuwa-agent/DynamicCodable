@@ -66,10 +66,11 @@ extension Node.Error : Equatable {
             return lhsIndex == rhsIndex
         case let (.typeMismatch(lhsType), .typeMismatch(rhsType)):
             return lhsType == rhsType
+        case (.otherError, .otherError):
+            // otherError 包装的 Swift.Error 可能不可 Equatable，直接返回 true 表示同种错误类型
+            return true
         default:
             return false
         }
     }
-    
-    
 }

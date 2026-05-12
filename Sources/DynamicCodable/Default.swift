@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Accessibility
 
 @propertyWrapper
 public struct Default<T: Codable>: RawRepresentable {

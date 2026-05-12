@@ -226,7 +226,7 @@ private final class ParseState {
         }
 
         // 纯量行
-        if let key = danglingKey {
+        if danglingKey != nil {
             try handleScalarLine(content: content, parent: parent)
         }
         // 否则忽略（根级别的纯量行暂时丢弃）
