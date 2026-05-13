@@ -17,7 +17,7 @@ TOML 模块是 DynamicCodable 项目的 TOML 格式处理库，基于 `Node` 中
 
 ```
 Sources/TOML/
-├── Toml.swift            # 模块入口，重导出 DynamicCodable 模块
+├── Toml.swift            # 模块入口，@_exported 重导出 DynamicCodable 模块
 ├── TOMLError.swift       # TOMLError 枚举（6 种错误）
 ├── TOMLParser.swift      # TOML 字符串 → Node 树 解析器
 ├── TOMLSerializer.swift  # Node 树 → TOML 字符串 序列化器

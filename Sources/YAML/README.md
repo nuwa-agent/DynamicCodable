@@ -2,7 +2,7 @@
 
 ## 功能简介
 
-YAML 模块是 Nuwa 项目的 YAML 格式处理库，基于 `Serialization.Node` 中间表示，实现完整的 **YAML 解析、序列化、Codable 编解码**，并支持**注释完整往返保留**。
+YAML 模块是 DynamicCodable 项目的 YAML 格式处理库，基于 `DynamicCodable.Node` 中间表示，实现完整的 **YAML 解析、序列化、Codable 编解码**，并支持**注释完整往返保留**。
 
 核心能力：
 - **YAMLParser** — 将 YAML 字符串解析为 `Node` 树
@@ -11,13 +11,13 @@ YAML 模块是 Nuwa 项目的 YAML 格式处理库，基于 `Serialization.Node`
 - **YAMLEncoder** — 将任意 `Encodable` 类型编码为 YAML 字符串
 - **YAMLError** — 统一的错误类型
 
-数据流：`YAML String ↔ Node ↔ Swift Codable Type`
+数据流：`YAML String ↔ Node ↔ Swift Codable Type`（注释可完整保留）
 
 ## 文件结构
 
 ```
 Sources/YAML/
-├── Yaml.swift            # 模块入口，重导出 Serialization 模块
+├── Yaml.swift            # 模块入口，重导出 DynamicCodable 模块
 ├── YAMLError.swift       # YAMLError 枚举 (6 种错误)
 ├── YAMLParser.swift      # YAML 字符串 → Node 树 解析器
 ├── YAMLSerializer.swift  # Node 树 → YAML 字符串 序列化器
@@ -179,7 +179,7 @@ let decoded = try YAMLDecoder().decode(Person.self, from: yaml)
 
 ## 依赖
 
-- **Serialization** — Node 树数据结构
+- **DynamicCodable** — Node 树数据结构
 
 ## 注意事项
 

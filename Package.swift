@@ -23,9 +23,7 @@ let package = Package(
         targets: ["JSON"]),
     ],
     dependencies: [
-        // Swift Argument Parser
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.7.1"),
-        // Swift OrderedCollections
+        // Swift OrderedCollections — 提供 OrderedDictionary 保持键插入顺序
         .package(url: "https://github.com/apple/swift-collections", from: "1.5.0"),
     ],
     targets: [

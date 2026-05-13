@@ -1,15 +1,15 @@
-# Serialization 模块
+# DynamicCodable 模块
 
 ## 功能简介
 
-Serialization 是 Nuwa 项目的**核心数据抽象层**，提供与格式无关的树形数据结构 `Node`，作为 JSON、YAML 等序列化格式的统一中间表示 (IR)，完整桥接 Swift 的 `Codable` 协议。
+DynamicCodable 是 DynamicCodable 项目的**核心数据抽象层**，提供与格式无关的树形数据结构 `Node`，作为 JSON、YAML、TOML 等序列化格式的统一中间表示 (IR)，完整桥接 Swift 的 `Codable` 协议。
 
-设计理念：所有格式的数据先转化为 `Node` 树，再根据需要转为目标格式或 Swift 原生类型。`Node` 额外保留注释元数据 (`comments` / `inlineComment`)，确保 YAML 等格式的"读→改→写"往返过程中注释不丢失。
+设计理念：所有格式的数据先转化为 `Node` 树，再根据需要转为目标格式或 Swift 原生类型。`Node` 额外保留注释元数据 (`comments` / `inlineComment`)，确保 YAML、TOML 等格式的"读→改→写"往返过程中注释不丢失。
 
 ## 文件结构
 
 ```
-Sources/Serialization/
+Sources/DynamicCodable/
 ├── Node.swift              # Node 结构体定义、Object/Array 类型别名、Equatable、dynamicMemberLookup
 ├── Node+Value.swift        # Node.Value 枚举 (7 种值类型)、计算属性、Equatable
 ├── Node+Convert.swift      # 静态工厂方法、类型检查 (isXxx)、安全转换 (toXxx)、兜底转换 (asXxx)
