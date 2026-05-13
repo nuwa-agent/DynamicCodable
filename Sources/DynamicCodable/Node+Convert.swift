@@ -101,6 +101,10 @@ extension Node {
 // MARK: - 从其他值转化
 extension Node {
     public static func from(_ value: Any?) -> Node {
+        if #available(macOS 15.0, *) {
+            if let v = value as? Int128 { return Node.int128(v) }
+            if let v = value as? UInt128 { return Node.uint128(v) }
+        }
         switch value {
         case let v as Node:         return v
         case let v as Value:        return Node(v)
@@ -113,13 +117,11 @@ extension Node {
         case let v as Float:        return Node.float(v)
         case let v as Double:       return Node.double(v)
         case let v as CChar:        return Node.char(v)
-        case let v as Int128:       return Node.int128(v)
         case let v as Int64:        return Node.int64(v)
         case let v as Int32:        return Node.int32(v)
         case let v as Int16:        return Node.int16(v)
         case let v as Int8:         return Node.int8(v)
         case let v as Int:          return Node.int(v)
-        case let v as UInt128:      return Node.uint128(v)
         case let v as UInt64:       return Node.uint64(v)
         case let v as UInt32:       return Node.uint32(v)
         case let v as UInt16:       return Node.uint16(v)
@@ -134,10 +136,12 @@ extension Node {
         }
     }
     
+    @available(macOS 15.0, *)
     public static func uint128(_ value:UInt128) -> Node {
         return Node.number(value.description)
     }
     
+    @available(macOS 15.0, *)
     public static func uint128<T>(_ value:T) -> Node where T : RawRepresentable, T.RawValue == UInt128 {
         return Node.number(value.rawValue.description)
     }
@@ -182,10 +186,12 @@ extension Node {
         return Node.number(value.rawValue.description)
     }
     
+    @available(macOS 15.0, *)
     public static func int128(_ value:Int128) -> Node {
         return Node.number(value.description)
     }
     
+    @available(macOS 15.0, *)
     public static func int128<T>(_ value:T) -> Node where T : RawRepresentable, T.RawValue == Int128 {
         return Node.number(value.rawValue.description)
     }
@@ -301,6 +307,7 @@ extension Node {
         return 0.0
     }
     
+    @available(macOS 15.0, *)
     public var asInt128: Int128 {
         let doubleValue = asDouble
         if  doubleValue >= Double(Int128.max) { return Int128.max }
@@ -312,6 +319,7 @@ extension Node {
         return 0
     }
     
+    @available(macOS 15.0, *)
     public var asUInt128: UInt128 {
         let doubleValue = asDouble
         if  doubleValue >= Double(UInt128.max) { return UInt128.max }
@@ -501,6 +509,7 @@ extension Node {
         return try defaultValue()
     }
     
+    @available(macOS 15.0, *)
     public func toInt128() -> Int128? {
         if case .number(let value) = rawValue,
            let result = Int128(value) {
@@ -509,6 +518,7 @@ extension Node {
         return nil
     }
     
+    @available(macOS 15.0, *)
     public func toInt128(
         `default` defaultValue: @autoclosure () throws -> Int128
     ) rethrows -> Int128 {
@@ -519,6 +529,7 @@ extension Node {
         return try defaultValue()
     }
     
+    @available(macOS 15.0, *)
     public func toUInt128() -> UInt128? {
         if case .number(let value) = rawValue,
            let result = UInt128(value) {
@@ -527,6 +538,7 @@ extension Node {
         return nil
     }
     
+    @available(macOS 15.0, *)
     public func toUInt128(
         `default` defaultValue: @autoclosure () throws -> UInt128
     ) rethrows -> UInt128 {

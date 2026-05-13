@@ -389,7 +389,7 @@ private final class ParseState {
         default: break
         }
         // 数字
-        if let _ = Int128(t) { return Node(.number(t)) }
+        if #available(macOS 15.0, *), let _ = Int128(t) { return Node(.number(t)) }
         if let _ = Double(t) { return Node(.number(t)) }
         return Node(.string(t))
     }

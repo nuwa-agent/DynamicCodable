@@ -19,7 +19,7 @@ extension Node: Encodable {
             try container.encode(value)
         case .number(let value):
             var container = encoder.singleValueContainer()
-            if let number = Int128(value) {
+            if #available(macOS 15.0, *), let number = Int128(value) {
                 try container.encode(number)
             } else if let number = Double(value) {
                 try container.encode(number)

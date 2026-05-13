@@ -6,7 +6,21 @@ import PackageDescription
 let package = Package(
     name: "DynamicCodable",
     platforms: [
-        .macOS(.v15)
+        .macOS(.v13), .iOS(.v16)
+    ],
+    products: [
+      .library(
+        name: "DynamicCodable",
+        targets: ["DynamicCodable"]),
+      .library(
+        name: "YAML",
+        targets: ["YAML"]),
+      .library(
+        name: "TOML",
+        targets: ["TOML"]),
+      .library(
+        name: "JSON",
+        targets: ["JSON"]),
     ],
     dependencies: [
         // Swift Argument Parser

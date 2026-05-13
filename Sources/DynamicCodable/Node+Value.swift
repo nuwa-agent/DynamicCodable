@@ -42,6 +42,7 @@ extension Node.Value {
         return 0.0
     }
     
+    @available(macOS 15.0, *)
     public var int128: Int128 {
         let doubleValue = double
         if  doubleValue >= Double(Int128.max) { return Int128.max }
@@ -53,6 +54,7 @@ extension Node.Value {
         return 0
     }
     
+    @available(macOS 15.0, *)
     public var uint128: UInt128 {
         let doubleValue = double
         if  doubleValue >= Double(UInt128.max) { return UInt128.max }

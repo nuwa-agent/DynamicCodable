@@ -339,7 +339,7 @@ public struct TOMLParser {
                     return Node(.number(str))
                 }
             } else {
-                if let _ = Int128(cleaned) {
+                if #available(macOS 15.0, *), let _ = Int128(cleaned) {
                     return Node(.number(str))
                 }
             }
