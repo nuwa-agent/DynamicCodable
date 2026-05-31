@@ -101,38 +101,21 @@ extension Node {
 // MARK: - 从其他值转化
 extension Node {
     public static func from(_ value: Any?) -> Node {
-        if #available(macOS 15.0, *) {
-            if let v = value as? Int128 { return Node.int128(v) }
-            if let v = value as? UInt128 { return Node.uint128(v) }
-        }
         switch value {
-        case let v as Node:         return v
-        case let v as Value:        return Node(v)
-        case let v as [Node]:       return Node.array(v)
-        case let v as Object:       return Node.object(v)
-        case let v as Bool:         return Node.bool(v)
-        case let v as String:       return Node.string(v)
-        case let v as NSNumber:     return Node.number(v.stringValue)
-        case let v as Decimal:      return Node.decimal(v)
-        case let v as Float:        return Node.float(v)
-        case let v as Double:       return Node.double(v)
-        case let v as CChar:        return Node.char(v)
-        case let v as Int64:        return Node.int64(v)
-        case let v as Int32:        return Node.int32(v)
-        case let v as Int16:        return Node.int16(v)
-        case let v as Int8:         return Node.int8(v)
-        case let v as Int:          return Node.int(v)
-        case let v as UInt64:       return Node.uint64(v)
-        case let v as UInt32:       return Node.uint32(v)
-        case let v as UInt16:       return Node.uint16(v)
-        case let v as UInt8:        return Node.uint8(v)
-        case let v as UInt:         return Node.uint(v)
-        case _ as NSNull:           return Node.null
-        case let v as [String: Any]:return Node.object(Node.Object(uniqueKeysWithValues: v.map { ($0.key, Node.from($0.value)) }))
-        case let v as [Any]:        return Node.array(Node.Array(v.compactMap { Node.from($0) }))
-        case let v as Swift.Error:  return Node.error(Error.otherError(v), ignore: [])
-        case .none:                 return Node.null
-        default:                    return Node.error(Error.typeMismatch("unknow \(String(describing: value))"), ignore: [])
+        case .none:
+            return .null
+        case let v as Node:
+            return v
+        case let v as Convertible:
+            return v.asNode
+        case let v as [String: Any?]:
+            return .object(Object(uniqueKeysWithValues: v.map { ($0.key, from($0.value)) }))
+        case let v as [Any?]:
+            return .array(Array(v.compactMap { from($0) }))
+        case let v as Swift.Error:
+            return .error(Error.otherError(v), ignore: [])
+        default:
+            return .error(Error.typeMismatch("unknow \(String(describing: value))"), ignore: [])
         }
     }
     
@@ -712,25 +695,5 @@ extension Node {
     }
 }
 
-extension String {
-    public var asNode: Node { Node.string(self) }
-}
-extension FixedWidthInteger {
-    public var asNode: Node { Node.number(description) }
-}
-extension Decimal {
-    public var asNode: Node { Node.number(description) }
-}
-extension Double {
-    public var asNode: Node { Node.number(description) }
-}
-extension Float {
-    public var asNode: Node { Node.number(description) }
-}
-extension Bool {
-    public var asNode: Node { Node.bool(self) }
-}
-extension NSNull {
-    public var asNode: Node { Node.null }
-}
+
 
