@@ -210,8 +210,8 @@ extension Json.Schema: Node.Convertible {
             if !values.isEmpty {
                 dict["enum"] = .array(values.map(\.asNode))
             }
-            if let minLength { dict["minLength"] = .int(minLength) }
-            if let maxLength { dict["maxLength"] = .int(maxLength) }
+            if let minLength { dict["minLength"] = .integer(minLength) }
+            if let maxLength { dict["maxLength"] = .integer(maxLength) }
             if let pattern, !pattern.isEmpty { dict["pattern"] = .string(pattern) }
             return .object(dict)
         case let .number(desc, values, minimum, maximum):
@@ -222,8 +222,8 @@ extension Json.Schema: Node.Convertible {
             if !values.isEmpty {
                 dict["enum"] = .array(values.map(\.asNode))
             }
-            if let minimum { dict["minimum"] = .double(minimum) }
-            if let maximum { dict["maximum"] = .double(maximum) }
+            if let minimum { dict["minimum"] = .number(minimum) }
+            if let maximum { dict["maximum"] = .number(maximum) }
             return .object(dict)
         case let .integer(desc, values, minimum, maximum):
             var dict: OrderedDictionary<String, Node> = [
@@ -233,14 +233,212 @@ extension Json.Schema: Node.Convertible {
             if !values.isEmpty {
                 dict["enum"] = .array(values.map(\.asNode))
             }
-            if let minimum { dict["minimum"] = .int(minimum) }
-            if let maximum { dict["maximum"] = .int(maximum) }
+            if let minimum { dict["minimum"] = .integer(minimum) }
+            if let maximum { dict["maximum"] = .integer(maximum) }
             return .object(dict)
         case .boolean(let desc):
             return .object([
                 "type"          : .string("boolean"),
                 "description"   : .string(desc),
             ])
+        }
+    }
+}
+
+// MARK: - Validation
+
+extension Json.Schema {
+
+    /// Schema 校验错误类型，描述 Node 数据不匹配 Schema 的具体原因
+    public enum ValidationError: LocalizedError, CustomStringConvertible {
+        /// 类型不匹配
+        case typeMismatch(expected: String, actual: String, at: String)
+        /// 必填字段缺失
+        case missingRequired(field: String, at: String)
+        /// 值不在枚举范围内
+        case valueNotInEnum(field: String, allowed: [String], actual: String, at: String)
+        /// 值超出范围约束
+        case valueOutOfRange(field: String, range: String, actual: String, at: String)
+        /// 字符串长度低于最小值
+        case stringTooShort(field: String, minLength: Int, actualLength: Int, at: String)
+        /// 字符串长度超出最大值
+        case stringTooLong(field: String, maxLength: Int, actualLength: Int, at: String)
+        /// 字符串不匹配正则模式
+        case stringPatternMismatch(field: String, pattern: String, actual: String, at: String)
+        /// 数组元素数量低于最小值
+        case arrayTooShort(field: String, minItems: Int, actualCount: Int, at: String)
+        /// 数组元素数量超出最大值
+        case arrayTooLong(field: String, maxItems: Int, actualCount: Int, at: String)
+
+        public var description: String {
+            switch self {
+            case let .typeMismatch(expected, actual, path):
+                return "[\(path)] 期望类型为 \(expected)，实际为 \(actual)"
+            case let .missingRequired(field, path):
+                return "[\(path)] 必填字段 \"\(field)\" 缺失"
+            case let .valueNotInEnum(field, allowed, actual, path):
+                return "[\(path)] 字段 \"\(field)\" 值 \"\(actual)\" 不在允许值 \(allowed) 中"
+            case let .valueOutOfRange(field, range, actual, path):
+                return "[\(path)] 字段 \"\(field)\" 值 \(actual) 超出范围 \(range)"
+            case let .stringTooShort(field, minLength, actualLength, path):
+                return "[\(path)] 字段 \"\(field)\" 最少 \(minLength) 字符，实际 \(actualLength)"
+            case let .stringTooLong(field, maxLength, actualLength, path):
+                return "[\(path)] 字段 \"\(field)\" 最多 \(maxLength) 字符，实际 \(actualLength)"
+            case let .stringPatternMismatch(field, pattern, actual, path):
+                return "[\(path)] 字段 \"\(field)\" 值 \"\(actual)\" 不匹配正则 \(pattern)"
+            case let .arrayTooShort(field, minItems, actualCount, path):
+                return "[\(path)] 字段 \"\(field)\" 最少 \(minItems) 个元素，实际 \(actualCount)"
+            case let .arrayTooLong(field, maxItems, actualCount, path):
+                return "[\(path)] 字段 \"\(field)\" 最多 \(maxItems) 个元素，实际 \(actualCount)"
+            }
+        }
+        
+        public var errorDescription: String? {
+            return description
+        }
+    }
+
+    /// 校验 Node 数据是否符合当前 Schema 定义
+    ///
+    /// - Parameters:
+    ///   - node: 待校验的 Node 数据
+    ///   - path: 当前校验路径（用于错误定位，支持 JSON Path 格式如 "$.user.name"）
+    /// - Throws: ``ValidationError`` 如果数据不匹配 Schema
+    public func validate(_ node: Node, at path: String = "$") throws {
+        // 简写别名，避免在 throw 中重复写完整类型路径
+        typealias E = Json.Schema.ValidationError
+
+        switch self {
+
+        // ── 对象类型校验：检查必填字段 + 递归校验每个属性 ──
+        case let .object(properties, required):
+            guard case .object(let dict) = node.rawValue else {
+                throw E.typeMismatch(expected: "object", actual: node.rawValue.typeName, at: path)
+            }
+            // 校验所有必填字段是否存在
+            for field in required {
+                guard dict[field] != nil else {
+                    throw E.missingRequired(field: field, at: "\(path).\(field)")
+                }
+            }
+            // 递归校验已提供的属性值是否符合各自 Schema
+            for (key, schema) in properties {
+                if let value = dict[key] {
+                    try schema.validate(value, at: "\(path).\(key)")
+                }
+            }
+
+        // ── 字符串类型校验：类型 + 枚举 + 长度 + 正则 ──
+        case let .string(_, enumValues, minLength, maxLength, pattern):
+            guard case .string(let str) = node.rawValue else {
+                throw E.typeMismatch(expected: "string", actual: node.rawValue.typeName, at: path)
+            }
+            // 校验枚举值约束
+            if !enumValues.isEmpty, !enumValues.contains(str) {
+                throw E.valueNotInEnum(field: path, allowed: enumValues, actual: str, at: path)
+            }
+            // 校验最小长度
+            if let minimumLength = minLength, str.count < minimumLength {
+                throw E.stringTooShort(field: path, minLength: minimumLength, actualLength: str.count, at: path)
+            }
+            // 校验最大长度
+            if let maximumLength = maxLength, str.count > maximumLength {
+                throw E.stringTooLong(field: path, maxLength: maximumLength, actualLength: str.count, at: path)
+            }
+            // 校验正则模式
+            if let regexPattern = pattern, str.range(of: regexPattern, options: .regularExpression) == nil {
+                throw E.stringPatternMismatch(field: path, pattern: regexPattern, actual: str, at: path)
+            }
+
+        // ── 浮点数类型校验：类型 + 枚举 + 范围 ──
+        case let .number(_, enumValues, minVal, maxVal):
+            guard case .number(let numStr) = node.rawValue,
+                  let num = Double(numStr) else {
+                throw E.typeMismatch(expected: "number", actual: node.rawValue.typeName, at: path)
+            }
+            // 校验枚举值约束
+            if !enumValues.isEmpty, !enumValues.contains(num) {
+                throw E.valueNotInEnum(
+                    field: path,
+                    allowed: enumValues.map { String($0) },
+                    actual: String(num),
+                    at: path
+                )
+            }
+            // 校验最小值
+            if let minimum = minVal, num < minimum {
+                throw E.valueOutOfRange(field: path, range: ">= \(minimum)", actual: String(num), at: path)
+            }
+            // 校验最大值
+            if let maximum = maxVal, num > maximum {
+                throw E.valueOutOfRange(field: path, range: "<= \(maximum)", actual: String(num), at: path)
+            }
+
+        // ── 整数类型校验：类型 + 枚举 + 范围 ──
+        case let .integer(_, enumValues, minVal, maxVal):
+            // JSON 中整数也存储为 .number，需要额外检查是否为整数值
+            guard case .number(let numStr) = node.rawValue,
+                  let num = Int(numStr) else {
+                throw E.typeMismatch(expected: "integer", actual: node.rawValue.typeName, at: path)
+            }
+            // 校验枚举值约束
+            if !enumValues.isEmpty, !enumValues.contains(num) {
+                throw E.valueNotInEnum(
+                    field: path,
+                    allowed: enumValues.map { String($0) },
+                    actual: String(num),
+                    at: path
+                )
+            }
+            // 校验最小值
+            if let minimum = minVal, num < minimum {
+                throw E.valueOutOfRange(field: path, range: ">= \(minimum)", actual: String(num), at: path)
+            }
+            // 校验最大值
+            if let maximum = maxVal, num > maximum {
+                throw E.valueOutOfRange(field: path, range: "<= \(maximum)", actual: String(num), at: path)
+            }
+
+        // ── 布尔类型校验 ──
+        case .boolean(_):
+            guard case .bool(_) = node.rawValue else {
+                throw E.typeMismatch(expected: "boolean", actual: node.rawValue.typeName, at: path)
+            }
+
+        // ── 数组类型校验：类型 + 长度 + 递归校验每个元素 ──
+        case let .array(items, minimumItems, maximumItems):
+            guard case .array(let arr) = node.rawValue else {
+                throw E.typeMismatch(expected: "array", actual: node.rawValue.typeName, at: path)
+            }
+            // 校验最小元素数
+            if let minItems = minimumItems, arr.count < minItems {
+                throw E.arrayTooShort(field: path, minItems: minItems, actualCount: arr.count, at: path)
+            }
+            // 校验最大元素数
+            if let maxItems = maximumItems, arr.count > maxItems {
+                throw E.arrayTooLong(field: path, maxItems: maxItems, actualCount: arr.count, at: path)
+            }
+            // 递归校验每个元素
+            for (index, item) in arr.enumerated() {
+                try items.validate(item, at: "\(path)[\(index)]")
+            }
+        }
+    }
+}
+
+// MARK: - Node.Value typeName
+
+extension Node.Value {
+    /// 返回人类可读的类型名称，用于校验错误信息
+    var typeName: String {
+        switch self {
+        case .null:    return "null"
+        case .bool:    return "boolean"
+        case .number:  return "number"
+        case .string:  return "string"
+        case .array:   return "array"
+        case .object:  return "object"
+        case .error:   return "error"
         }
     }
 }

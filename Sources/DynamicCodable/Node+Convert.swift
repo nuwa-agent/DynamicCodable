@@ -24,6 +24,18 @@ extension Node {
         }
         return .null
     }
+    public static func number(_ value: BinaryFloatingPoint?) -> Node {
+        if let value = value {
+            return Node(.number(Double(value).description))
+        }
+        return .null
+    }
+    public static func integer(_ value: BinaryInteger?) -> Node {
+        if let value = value {
+            return Node(.number(value.description))
+        }
+        return .null
+    }
     public static func string(_ value: String?) -> Node {
         if let value = value {
             return Node(.string(value))
